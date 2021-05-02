@@ -47,6 +47,7 @@
 
 #define DUMP_TENSOR_START(TAG, T) DUMP_START(TAG, (void *) &((T).data[0]), (void *) &((T).data[(T).element_count() - 1]), true)
 #define DUMP_TENSOR_STOP(TAG) DUMP_STOP(TAG)
+#define TILE_SIZE 4
 
 class opt_fc_layer_t : public fc_layer_t
 {
@@ -85,14 +86,16 @@ public:
 			}
 		}
 
-		for ( int b = 0; b < in.size.y; b++ ) {
-			for ( int i = 0; i < in.size.x; i++ ) {
+		for( int nn = 0; n < out.size.x; nn=nn+TILE_SIZE ){
+			for ( int b = 0; b < in.size.y; b++ ) {
 				for ( int n = 0; n < out.size.x; n++ ) {
-					double in_val = in(i, b, 0);
-					double weight_val = weights( i, n, 0 );
-					double mul_val = in_val * weight_val;
-					double acc_val = activator_input(n, 0, 0, b) + mul_val;
-					activator_input(n, 0, 0, b) = acc_val;
+					for ( int i = 0; i < in.size.x; i++ ) {
+						double in_val = in(i, b, 0);
+						double weight_val = weights( i, n, 0 );
+						double mul_val = in_val * weight_val;
+						double acc_val = activator_input(n, 0, 0, b) + mul_val;
+						activator_input(n, 0, 0, b) = acc_val;
+					}
 				}
 			}
 		}
